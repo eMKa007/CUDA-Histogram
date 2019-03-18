@@ -12,8 +12,10 @@ using namespace cv;
 
 /* Functions */
 void PrintHistogramAndExecTime(int * histogram, double durationCPU);
+void ShowInputImage(cv::Mat &img);
 int img2array(cv::Mat &img, int * &histogramCPU);
 bool checkArguments( int argc, char* argv[], int* NumberOfExeutions );
+void ShowInputImage(cv::Mat &img);
 void PrintUsage();
 
 
@@ -34,7 +36,7 @@ int main( int argc, char* argv[])
 		exit(-1);
 	}
 
-	//OpenCV test case. 
+	//OpenCV input image. 
 	cv::Mat img = imread(argv[1], IMREAD_GRAYSCALE);
 	if( img.cols == 0 | img.rows == 0 )
 	{
@@ -42,10 +44,7 @@ int main( int argc, char* argv[])
 		exit(-1);
 	}
 
-	namedWindow("After enter press- computing will start. Wait till end :)", WINDOW_NORMAL);
-	imshow("After enter press- computing will start. Wait till end :)", img);
-	waitKey(0);
-	destroyWindow("After enter press- computing will start. Wait till end :)");
+	ShowInputImage(img);
 
 	//Alloc memory for 1d image pixel table, and two histograms.
 	int* imageArray = (int*)calloc( img.rows*img.cols, sizeof(int));
@@ -140,9 +139,19 @@ bool checkArguments(int argc, char* argv[], int* NumberOfExecutions)
 	return true;
 }
 
+void ShowInputImage(cv::Mat &img)
+{
+	namedWindow("After enter press- computing will start. Wait till end :)", WINDOW_NORMAL);
+	imshow("After enter press- computing will start. Wait till end :)", img);
+	waitKey(0);
+	destroyWindow("After enter press- computing will start. Wait till end :)");
+}
+
 void PrintUsage()
 {
-	printf("Usage: \n\tprogramname.exe <imageName.jpg> <NumberOfExecutions>\n\n\tTips: Locate image in the same folder as this *.exe file.\n\tNumberOfExecutions [integer] above 10000 can cause problems. Optimal: 1000 - 5000.\n");
+	printf("Usage: \n\tprogramname.exe <imageName.jpg> <NumberOfExecutions>\n");
+	printf("\n\tTips: Locate image in the same folder as this *.exe file.\n");
+	printf("\tNumberOfExecutions [integer] above 10000 can cause problems. Optimal: 1000 - 5000.\n");
 }
 
 // Helper function for using CUDA to add vectors in parallel.
