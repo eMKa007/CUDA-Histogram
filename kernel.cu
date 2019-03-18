@@ -3,8 +3,16 @@
 #include "device_launch_parameters.h"
 
 #include <stdio.h>
+
 #include <opencv2/opencv.hpp>
 using namespace cv;
+
+#include "CPU_Hist.h"
+
+/* Functions */
+void PrintHistogramAndExecTime(int * histogram, double durationCPU);
+int img2array(cv::Mat &img, int * &histogramCPU);
+
 
 cudaError_t addWithCuda(int *c, const int *a, const int *b, unsigned int size);
 
@@ -17,35 +25,86 @@ __global__ void addKernel(int *c, const int *a, const int *b)
 int main()
 {
 	//OpenCV test case. 
-	cv::Mat img = imread("cameraman.jpg");
+	cv::Mat img = imread("atol.jpg", IMREAD_GRAYSCALE);
 	namedWindow("image", WINDOW_NORMAL);
 	imshow("image", img);
 	waitKey(0);
+	destroyWindow("image");
 
-    const int arraySize = 5;
-    const int a[arraySize] = { 1, 2, 3, 4, 5 };
-    const int b[arraySize] = { 10, 20, 30, 40, 50 };
-    int c[arraySize] = { 0 };
+	//Alloc memory for 1d image pixel table, and two histograms.
+	int* imageArray = (int*)calloc( img.rows*img.cols, sizeof(int));
+	int* histogramCPU = (int*)calloc(256, sizeof(int));
+	int* histogramGPU = (int*)calloc(256, sizeof(int));
 
-    // Add vectors in parallel.
-    cudaError_t cudaStatus = addWithCuda(c, a, b, arraySize);
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "addWithCuda failed!");
-        return 1;
-    }
+	if( !imageArray || !histogramCPU || !histogramGPU )
+	{
+		printf("Memory allocation error.");
+		return 0;
+	}
 
-    printf("{1,2,3,4,5} + {10,20,30,40,50} = {%d,%d,%d,%d,%d}\n",
-        c[0], c[1], c[2], c[3], c[4]);
+	int imgArraySize = img2array(img, imageArray);
 
-    // cudaDeviceReset must be called before exiting in order for profiling and
-    // tracing tools such as Nsight and Visual Profiler to show complete traces.
-    cudaStatus = cudaDeviceReset();
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaDeviceReset failed!");
-        return 1;
-    }
+	double meanDurationCPU = Test_CPU_Execution(imageArray, imgArraySize, histogramCPU, 1000);
+	PrintHistogramAndExecTime( histogramCPU, meanDurationCPU );
+
+
+    //const int arraySize = 5;
+    //const int a[arraySize] = { 1, 2, 3, 4, 5 };
+    //const int b[arraySize] = { 10, 20, 30, 40, 50 };
+    //int c[arraySize] = { 0 };
+
+    //// Add vectors in parallel.
+    //cudaError_t cudaStatus = addWithCuda(c, a, b, arraySize);
+    //if (cudaStatus != cudaSuccess) {
+    //    fprintf(stderr, "addWithCuda failed!");
+    //    return 1;
+    //}
+
+    //printf("{1,2,3,4,5} + {10,20,30,40,50} = {%d,%d,%d,%d,%d}\n",
+    //    c[0], c[1], c[2], c[3], c[4]);
+
+    //// cudaDeviceReset must be called before exiting in order for profiling and
+    //// tracing tools such as Nsight and Visual Profiler to show complete traces.
+    //cudaStatus = cudaDeviceReset();
+    //if (cudaStatus != cudaSuccess) {
+    //    fprintf(stderr, "cudaDeviceReset failed!");
+    //    return 1;
+    //}
 
     return 0;
+}
+
+void PrintHistogramAndExecTime(int* histogram, double durationCPU)
+{
+	long sum = 0;
+	for (int i = 0; i < 256; i++)
+	{
+		printf("%d. %d\n", i, histogram[i]);
+		sum += histogram[i];
+	}
+
+	printf("\nTotal pixel number is: %d\n", sum);
+	printf("Mean histogram computing time: %f [ms]\n", durationCPU);
+}
+
+int img2array(cv::Mat &img, int * &imageArray)
+{
+	int Row = 0;
+	int Col = 0;
+	int idx = 0;
+	while (Row < img.rows)
+	{
+		//Acces every pixel and count them by color.
+		imageArray[idx++] = *(img.data + img.step[0] * Row + img.step[1] * Col++);
+
+		if (Col == img.cols)
+		{
+			Col = 0;
+			Row++;
+		}
+	}
+
+	return img.rows*img.cols;
 }
 
 // Helper function for using CUDA to add vectors in parallel.
