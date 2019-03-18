@@ -3,6 +3,7 @@
 #include "device_launch_parameters.h"
 
 #include <stdio.h>
+#include <string>
 
 #include <opencv2/opencv.hpp>
 using namespace cv;
@@ -12,6 +13,8 @@ using namespace cv;
 /* Functions */
 void PrintHistogramAndExecTime(int * histogram, double durationCPU);
 int img2array(cv::Mat &img, int * &histogramCPU);
+bool checkArguments( int argc, char* argv[], int* NumberOfExeutions );
+void PrintUsage();
 
 
 cudaError_t addWithCuda(int *c, const int *a, const int *b, unsigned int size);
@@ -22,14 +25,27 @@ __global__ void addKernel(int *c, const int *a, const int *b)
     c[i] = a[i] + b[i];
 }
 
-int main()
+int main( int argc, char* argv[])
 {
+	int NumberOfExecutions = 0;
+	if( !checkArguments( argc, argv, &NumberOfExecutions ) )
+	{
+		PrintUsage();
+		exit(-1);
+	}
+
 	//OpenCV test case. 
-	cv::Mat img = imread("atol.jpg", IMREAD_GRAYSCALE);
-	namedWindow("image", WINDOW_NORMAL);
-	imshow("image", img);
+	cv::Mat img = imread(argv[1], IMREAD_GRAYSCALE);
+	if( img.cols == 0 | img.rows == 0 )
+	{
+		PrintUsage();
+		exit(-1);
+	}
+
+	namedWindow("After enter press- computing will start. Wait till end :)", WINDOW_NORMAL);
+	imshow("After enter press- computing will start. Wait till end :)", img);
 	waitKey(0);
-	destroyWindow("image");
+	destroyWindow("After enter press- computing will start. Wait till end :)");
 
 	//Alloc memory for 1d image pixel table, and two histograms.
 	int* imageArray = (int*)calloc( img.rows*img.cols, sizeof(int));
@@ -44,7 +60,7 @@ int main()
 
 	int imgArraySize = img2array(img, imageArray);
 
-	double meanDurationCPU = Test_CPU_Execution(imageArray, imgArraySize, histogramCPU, 1000);
+	double meanDurationCPU = Test_CPU_Execution(imageArray, imgArraySize, histogramCPU, NumberOfExecutions);
 	PrintHistogramAndExecTime( histogramCPU, meanDurationCPU );
 
 
@@ -70,6 +86,10 @@ int main()
     //    fprintf(stderr, "cudaDeviceReset failed!");
     //    return 1;
     //}
+
+	free( imageArray );
+	free( histogramCPU );
+	free( histogramGPU );
 
     return 0;
 }
@@ -105,6 +125,24 @@ int img2array(cv::Mat &img, int * &imageArray)
 	}
 
 	return img.rows*img.cols;
+}
+
+bool checkArguments(int argc, char* argv[], int* NumberOfExecutions)
+{
+	if( argc < 3 )
+		return false;
+
+	char* EndPtr;
+	*NumberOfExecutions = strtod(argv[2], &EndPtr);
+	if( *EndPtr != '\0' )
+		return false;
+
+	return true;
+}
+
+void PrintUsage()
+{
+	printf("Usage: \n\tprogramname.exe <imageName.jpg> <NumberOfExecutions>\n\n\tTips: Locate image in the same folder as this *.exe file.\n\tNumberOfExecutions [integer] above 10000 can cause problems. Optimal: 1000 - 5000.\n");
 }
 
 // Helper function for using CUDA to add vectors in parallel.
