@@ -5,10 +5,12 @@
 #include <stdio.h>
 #include <string>
 
+#include "CPU_Hist.h"
+
 #include <opencv2/opencv.hpp>
 using namespace cv;
 
-#include "CPU_Hist.h"
+
 
 /* Functions */
 void PrintHistogramAndExecTime(int * histogram, double durationCPU);
@@ -18,14 +20,8 @@ bool checkArguments( int argc, char* argv[], int* NumberOfExeutions );
 void ShowInputImage(cv::Mat &img);
 void PrintUsage();
 
-
-cudaError_t addWithCuda(int *c, const int *a, const int *b, unsigned int size);
-
-__global__ void addKernel(int *c, const int *a, const int *b)
-{
-    int i = threadIdx.x;
-    c[i] = a[i] + b[i];
-}
+float GPU_Histogram(const int* inputArray, int* HistogramGPU, unsigned int size);
+__global__ void GPU_Histogram_Kernel( int* inputArray, int* HistogramGPU );
 
 int main( int argc, char* argv[])
 {
@@ -61,30 +57,18 @@ int main( int argc, char* argv[])
 
 	double meanDurationCPU = Test_CPU_Execution(imageArray, imgArraySize, histogramCPU, NumberOfExecutions);
 	PrintHistogramAndExecTime( histogramCPU, meanDurationCPU );
-
-
-    //const int arraySize = 5;
-    //const int a[arraySize] = { 1, 2, 3, 4, 5 };
-    //const int b[arraySize] = { 10, 20, 30, 40, 50 };
-    //int c[arraySize] = { 0 };
-
+	     
     //// Add vectors in parallel.
     //cudaError_t cudaStatus = addWithCuda(c, a, b, arraySize);
     //if (cudaStatus != cudaSuccess) {
     //    fprintf(stderr, "addWithCuda failed!");
     //    return 1;
     //}
-
-    //printf("{1,2,3,4,5} + {10,20,30,40,50} = {%d,%d,%d,%d,%d}\n",
-    //    c[0], c[1], c[2], c[3], c[4]);
-
-    //// cudaDeviceReset must be called before exiting in order for profiling and
-    //// tracing tools such as Nsight and Visual Profiler to show complete traces.
-    //cudaStatus = cudaDeviceReset();
-    //if (cudaStatus != cudaSuccess) {
-    //    fprintf(stderr, "cudaDeviceReset failed!");
-    //    return 1;
-    //}
+	////GPU device have to be reset before exit. 
+	//cudaStatus = cudaDeviceReset();
+	//if (cudaStatus != cudaSuccess) {
+	//    fprintf(stderr, "cudaDeviceReset failed!");
+	//    return 1;
 
 	free( imageArray );
 	free( histogramCPU );
@@ -154,82 +138,116 @@ void PrintUsage()
 	printf("\tNumberOfExecutions [integer] above 10000 can cause problems. Optimal: 1000 - 5000.\n");
 }
 
-// Helper function for using CUDA to add vectors in parallel.
-cudaError_t addWithCuda(int *c, const int *a, const int *b, unsigned int size)
+float GPU_Histogram(const int* inputArray, int* HistogramGPU, unsigned int inputArraySize)
 {
-    int *dev_a = 0;
-    int *dev_b = 0;
-    int *dev_c = 0;
-    cudaError_t cudaStatus;
+	int* dev_inputArray = 0;
+	int* dev_Histogram = 0;
+	cudaError_t cudaStatus;
 
-    // Choose which GPU to run on, change this on a multi-GPU system.
-    cudaStatus = cudaSetDevice(0);
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaSetDevice failed!  Do you have a CUDA-capable GPU installed?");
-        goto Error;
-    }
+	//Assume, we will use first GPU device.
+	cudaStatus = cudaSetDevice(0);
+	if( cudaStatus != cudaSuccess )
+	{
+		printf("cudaSetDevice() fail! Do you have CUDA available device?\n");
+		exit(-1);
+	}
 
-    // Allocate GPU buffers for three vectors (two input, one output)    .
-    cudaStatus = cudaMalloc((void**)&dev_c, size * sizeof(int));
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMalloc failed!");
-        goto Error;
-    }
+	// Cuda events used to measure execution time.
+	cudaEvent_t start, stop;
 
-    cudaStatus = cudaMalloc((void**)&dev_a, size * sizeof(int));
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMalloc failed!");
-        goto Error;
-    }
+	cudaStatus = cudaEventCreate(&start);
+	if (cudaStatus != cudaSuccess) {
+		printf("cudaEventCreate() fail! Can not create start event to measure execution time.\n");
+		exit(-1);
+	}
 
-    cudaStatus = cudaMalloc((void**)&dev_b, size * sizeof(int));
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMalloc failed!");
-        goto Error;
-    }
+	cudaStatus = cudaEventCreate(&stop);
+	if (cudaStatus != cudaSuccess) {
+		printf("cudaEventCreate() fail! Can not create start event to measure execution time.\n");
+		exit(-1);
+	}
 
-    // Copy input vectors from host memory to GPU buffers.
-    cudaStatus = cudaMemcpy(dev_a, a, size * sizeof(int), cudaMemcpyHostToDevice);
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMemcpy failed!");
-        goto Error;
-    }
+	cudaEventRecord(start);
 
-    cudaStatus = cudaMemcpy(dev_b, b, size * sizeof(int), cudaMemcpyHostToDevice);
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMemcpy failed!");
-        goto Error;
-    }
+	//Allocate space on GPU.
+	cudaStatus = cudaMalloc( (void**)&dev_inputArray, inputArraySize * sizeof(int) );
+	if (cudaStatus != cudaSuccess)
+	{
+		printf("cudaMalloc() fail! Can not allocate memory on GPU.\n");
+		exit(-1);
+	}
 
-    // Launch a kernel on the GPU with one thread for each element.
-    addKernel<<<1, size>>>(dev_c, dev_a, dev_b);
+	cudaStatus = cudaMalloc( (void**)&dev_Histogram, 256 * sizeof(int) );
+	if (cudaStatus != cudaSuccess)
+	{
+		printf("cudaMalloc() fail! Can not allocate memory on GPU.\n");
+		exit(-1);
+	}
 
-    // Check for any errors launching the kernel
-    cudaStatus = cudaGetLastError();
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "addKernel launch failed: %s\n", cudaGetErrorString(cudaStatus));
-        goto Error;
-    }
-    
-    // cudaDeviceSynchronize waits for the kernel to finish, and returns
-    // any errors encountered during the launch.
-    cudaStatus = cudaDeviceSynchronize();
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaDeviceSynchronize returned error code %d after launching addKernel!\n", cudaStatus);
-        goto Error;
-    }
+	// Initialise device Histogram with 0
+	cudaStatus = cudaMemset( (void**)&dev_Histogram, 0, 256 * sizeof(int) );
+	if( cudaStatus != cudaSuccess )
+	{
+		printf("cudaMalloc() fail! Can not allocate memory on GPU.\n");
+		exit(-1);
+	}
 
-    // Copy output vector from GPU buffer to host memory.
-    cudaStatus = cudaMemcpy(c, dev_c, size * sizeof(int), cudaMemcpyDeviceToHost);
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMemcpy failed!");
-        goto Error;
-    }
+	// Copy input to previously allocated memory on GPU.
+	cudaStatus = cudaMemcpy(dev_inputArray, inputArray, inputArraySize * sizeof(int), cudaMemcpyHostToDevice);
+	if (cudaStatus != cudaSuccess) {
+		printf("cudaMemcpy() fail! Can not copy data to GPU device.\n");
+		exit(-1);
+	}
 
-Error:
-    cudaFree(dev_c);
-    cudaFree(dev_a);
-    cudaFree(dev_b);
-    
-    return cudaStatus;
+	//Check available number of multiprocesors on GPU device- it will be used in kernel function.
+	cudaDeviceProp properties;
+	cudaStatus = cudaGetDeviceProperties( &properties, 0 );
+	if( cudaStatus != cudaSuccess )
+	{
+		printf("cudaGetDeviceProperties() fail.");
+		exit(-1);
+	}
+
+	int blocks = properties.multiProcessorCount;
+
+	//Launch kernel. ==============================================================================
+	GPU_Histogram_Kernel<< <blocks*2, 256> >>( dev_inputArray, inputArraySize, dev_Histogram);
+	// addKernel<<<1, size>>>(dev_c, dev_a, dev_b);
+
+	// Check for kernel errors.
+	cudaStatus = cudaGetLastError();
+	if (cudaStatus != cudaSuccess) {
+		printf("GPU_Histogram() kernel launch failed: %s\n", cudaGetErrorString(cudaStatus));
+	}
+
+	// Wait for kernel to finish work, and check for any errors during kernel work.
+	cudaStatus = cudaDeviceSynchronize();
+	if (cudaStatus != cudaSuccess) {
+		printf("cudaDeviceSynchronize() returned error code %d after launching!\n", cudaStatus);
+	}
+
+	// Copy output vector from GPU buffer to host memory.
+	cudaStatus = cudaMemcpy(HistogramGPU, dev_Histogram, 256 * sizeof(int), cudaMemcpyDeviceToHost);
+	if (cudaStatus != cudaSuccess) {
+		printf("cudaMemcpy() device to host failed!");
+	}
+
+	cudaEventRecord(stop);
+	cudaEventSynchronize(stop);
+
+	float miliseconds = 0;
+	cudaEventElapsedTime(&miliseconds, start, stop);
+
+	cudaEventDestroy( start );
+	cudaEventDestroy( stop );
+	cudaFree(dev_inputArray);
+	cudaFree(dev_Histogram);
+
+	return miliseconds;
 }
+
+__global__ void GPU_Histogram_Kernel(int* inputArray, int* HistogramGPU)
+{
+
+}
+

@@ -28,7 +28,7 @@ double Test_CPU_Execution(int* imageArray, int imageArraySize, int* histogramCPU
 		totalExecTime += CPU_Histogram( imageArray, imageArraySize, histogramCPU);
 		trialNo++;
 
-		if( trialNo == NumberOfExec )
+		if( trialNo > NumberOfExec )
 			break;
 		
 		memset( histogramCPU, 0, 256*sizeof(int) );
