@@ -1,5 +1,6 @@
 
 #include "cuda_runtime.h"
+#include "device_functions.h"
 #include "device_launch_parameters.h"
 
 #include <stdio.h>
@@ -20,8 +21,8 @@ bool checkArguments( int argc, char* argv[], int* NumberOfExeutions );
 void ShowInputImage(cv::Mat &img);
 void PrintUsage();
 
-float GPU_Histogram(const int* inputArray, int* HistogramGPU, unsigned int size);
-__global__ void GPU_Histogram_Kernel( int* inputArray, int* HistogramGPU );
+float GPU_Histogram( int* inputArray, int* HistogramGPU, unsigned int size);
+__global__ void GPU_Histogram_Kernel( int* inputArray, int inputArraySize, int* HistogramGPU );
 
 int main( int argc, char* argv[])
 {
@@ -55,9 +56,11 @@ int main( int argc, char* argv[])
 
 	int imgArraySize = img2array(img, imageArray);
 
-	double meanDurationCPU = Test_CPU_Execution(imageArray, imgArraySize, histogramCPU, NumberOfExecutions);
-	PrintHistogramAndExecTime( histogramCPU, meanDurationCPU );
-	     
+	//double meanDurationCPU = Test_CPU_Execution(imageArray, imgArraySize, histogramCPU, NumberOfExecutions);
+	//PrintHistogramAndExecTime( histogramCPU, meanDurationCPU );
+	  
+	float DurationGPU = GPU_Histogram( imageArray, histogramGPU, imgArraySize );
+	printf(" Duration: %ld [ms], which is about %f [s]\n", DurationGPU, DurationGPU/1000);
     //// Add vectors in parallel.
     //cudaError_t cudaStatus = addWithCuda(c, a, b, arraySize);
     //if (cudaStatus != cudaSuccess) {
@@ -138,7 +141,7 @@ void PrintUsage()
 	printf("\tNumberOfExecutions [integer] above 10000 can cause problems. Optimal: 1000 - 5000.\n");
 }
 
-float GPU_Histogram(const int* inputArray, int* HistogramGPU, unsigned int inputArraySize)
+float GPU_Histogram( int* inputArray, int* HistogramGPU, unsigned int inputArraySize)
 {
 	int* dev_inputArray = 0;
 	int* dev_Histogram = 0;
@@ -185,10 +188,10 @@ float GPU_Histogram(const int* inputArray, int* HistogramGPU, unsigned int input
 	}
 
 	// Initialise device Histogram with 0
-	cudaStatus = cudaMemset( (void**)&dev_Histogram, 0, 256 * sizeof(int) );
+	cudaStatus = cudaMemset( dev_Histogram, 0, 256 * sizeof(int) );
 	if( cudaStatus != cudaSuccess )
 	{
-		printf("cudaMalloc() fail! Can not allocate memory on GPU.\n");
+		printf("cudaMemset() fail! Can not set memory on GPU.\n");
 		exit(-1);
 	}
 
@@ -211,8 +214,7 @@ float GPU_Histogram(const int* inputArray, int* HistogramGPU, unsigned int input
 	int blocks = properties.multiProcessorCount;
 
 	//Launch kernel. ==============================================================================
-	GPU_Histogram_Kernel<< <blocks*2, 256> >>( dev_inputArray, inputArraySize, dev_Histogram);
-	// addKernel<<<1, size>>>(dev_c, dev_a, dev_b);
+	GPU_Histogram_Kernel<<<blocks*2, 256>>>( dev_inputArray, inputArraySize, dev_Histogram);
 
 	// Check for kernel errors.
 	cudaStatus = cudaGetLastError();
@@ -246,8 +248,15 @@ float GPU_Histogram(const int* inputArray, int* HistogramGPU, unsigned int input
 	return miliseconds;
 }
 
-__global__ void GPU_Histogram_Kernel(int* inputArray, int* HistogramGPU)
+__global__ void GPU_Histogram_Kernel(int* inputArray, int inputArraySize, int* HistogramGPU)
 {
+	int i = threadIdx.x + blockIdx.x * blockDim.x;
+	int stride = blockDim.x * gridDim.x;
 
+	while( i < inputArraySize )
+	{
+		atomicAdd( &HistogramGPU[ inputArray[i] ], 1);
+		i += stride;
+	}
 }
 
