@@ -96,9 +96,11 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Public\HistCPU.h" />
+    <ClInclude Include="Public\Image.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Private\HistCPU.cpp" />
+    <ClCompile Include="Private\Image.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -15,9 +15,15 @@
     <ClInclude Include="Public\HistCPU.h">
       <Filter>Public</Filter>
     </ClInclude>
+    <ClInclude Include="Public\Image.h">
+      <Filter>Public</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Private\HistCPU.cpp">
+      <Filter>Private</Filter>
+    </ClCompile>
+    <ClCompile Include="Private\Image.cpp">
       <Filter>Private</Filter>
     </ClCompile>
   </ItemGroup>

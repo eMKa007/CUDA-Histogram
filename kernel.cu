@@ -7,53 +7,61 @@
 #include <string>
 	
 #include "./Public/HistCPU.h"
-
-#include <opencv2/opencv.hpp>
-using namespace cv;
+#include "./Public/Image.h"
 
 /* Functions */
-void ShowInputImage(cv::Mat &img);
-int img2array(cv::Mat &img, int * &histogramCPU);
-bool checkArguments( int argc, char* argv[], int* NumberOfExeutions );
-void ShowInputImage(cv::Mat &img);
+int checkArguments( int argc, char* argv[] );
 void PrintUsage();
-
 float GPU_Histogram( int* inputArray, int* HistogramGPU, unsigned int size);
 __global__ void GPU_Histogram_Kernel( int* inputArray, int inputArraySize, int* HistogramGPU );
 
 int main( int argc, char* argv[])
 {
+	/*	----------------------------------------------------------
+	*	Parse arguments from command line.
+	*/
 	int NumberOfExecutions = 0;
-	if( !checkArguments( argc, argv, &NumberOfExecutions ) )
+	if( (NumberOfExecutions = checkArguments( argc, argv ) ) == 0 )
 	{
 		PrintUsage();
 		exit(-1);
 	}
 
-	//OpenCV input image. 
-	cv::Mat img = imread(argv[1], IMREAD_GRAYSCALE);
-	if( img.cols == 0 | img.rows == 0 )
+	/*	----------------------------------------------------------
+	*	Load in image and get its size.
+	*/
+	Image* ImagePtr = nullptr;
+	unsigned int imgArraySize = 0;
+	try 
 	{
-		PrintUsage();
+		ImagePtr = new Image(argv[1]);
+		imgArraySize = ImagePtr->GetArraySize();
+	}
+	catch (Exception ex)
+	{
+		printf("Image class throw an exception: %s.\n", ex.what());
 		exit(-1);
 	}
-
-	ShowInputImage(img);
-
-	//Alloc memory for 1d image pixel table, and two histograms.
-	int* imageArray = (int*)calloc( img.rows*img.cols, sizeof(int));
+	
+	/*	----------------------------------------------------------
+	*	Alloc memory for 1d image pixel table, and two histograms.
+	*/
+	int* imageArray = (int*)calloc(imgArraySize, sizeof(int));
 	int* histogramCPU = (int*)calloc(256, sizeof(int));
 	int* histogramGPU = (int*)calloc(256, sizeof(int));
 
 	if( !imageArray || !histogramCPU || !histogramGPU )
 	{
 		printf("Memory allocation error.");
-		return 0;
+		exit(-1);
 	}
 
-	int imgArraySize = img2array(img, imageArray);
-
-
+	/*	----------------------------------------------------------
+	*	Fill in Image array. Show image and procceed array size. 
+	*/
+	ImagePtr->img2array(imageArray);
+	ImagePtr->ShowInputImage("After any key press- computing will start. Wait till end :)");
+	
 	/*	----------------------------------------------------------
 	*	CPU computing time test code.
 	*/
@@ -79,7 +87,6 @@ int main( int argc, char* argv[])
 	/*	----------------------------------------------------------
 	*	Cleaning resources.
 	*/
-	
 	free( imageArray );
 	free( histogramCPU );
 	free( histogramGPU );
@@ -87,48 +94,33 @@ int main( int argc, char* argv[])
     return 0;
 }
 
-
-int img2array(cv::Mat &img, int * &imageArray)
-{
-	int Row = 0;
-	int Col = 0;
-	int idx = 0;
-	while (Row < img.rows)
-	{
-		//Acces every pixel and count them by color.
-		imageArray[idx++] = *(img.data + img.step[0] * Row + img.step[1] * Col++);
-
-		if (Col == img.cols)
-		{
-			Col = 0;
-			Row++;
-		}
-	}
-
-	return img.rows*img.cols;
-}
-
-bool checkArguments(int argc, char* argv[], int* NumberOfExecutions)
+/*	----------------------------------------------------------
+*	Function name:	checkArguments
+*	Parameters:		argc <int>, argv <char**>
+*	Used to:		Check input arguments and parse NumberOfExecutions number to valid one.
+*	Return:			Number of executions in integer.
+*/
+int checkArguments(int argc, char* argv[])
 {
 	if( argc < 3 )
 		return false;
 
 	char* EndPtr;
-	*NumberOfExecutions = strtod(argv[2], &EndPtr);
+	int NumberOfExecutions = 0;
+
+	NumberOfExecutions = strtod(argv[2], &EndPtr);
 	if( *EndPtr != '\0' )
 		return false;
 
-	return true;
+	return NumberOfExecutions;
 }
 
-void ShowInputImage(cv::Mat &img)
-{
-	namedWindow("After enter press- computing will start. Wait till end :)", WINDOW_NORMAL);
-	imshow("After enter press- computing will start. Wait till end :)", img);
-	waitKey(0);
-	destroyWindow("After enter press- computing will start. Wait till end :)");
-}
-
+/*	----------------------------------------------------------
+*	Function name:	PrintUsage
+*	Parameters:		None.
+*	Used to:		Print out message how to load an image, what is optimal number of executions etc.
+*	Return:			None.
+*/
 void PrintUsage()
 {
 	printf("Usage: \n\tprogramname.exe <imageName.jpg> <NumberOfExecutions>\n");
