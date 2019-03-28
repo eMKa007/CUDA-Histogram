@@ -4,18 +4,14 @@
 #include "device_launch_parameters.h"
 
 #include <stdio.h>
-#include <iostream>
 #include <string>
 
-#include "CPU_Hist.h"
+#include "HistCPU.h"
 
 #include <opencv2/opencv.hpp>
 using namespace cv;
 
-
-
 /* Functions */
-void PrintHistogramAndExecTime(int * histogram, double durationCPU);
 void ShowInputImage(cv::Mat &img);
 int img2array(cv::Mat &img, int * &histogramCPU);
 bool checkArguments( int argc, char* argv[], int* NumberOfExeutions );
@@ -57,12 +53,33 @@ int main( int argc, char* argv[])
 
 	int imgArraySize = img2array(img, imageArray);
 
-	double meanDurationCPU = Test_CPU_Execution(imageArray, imgArraySize, histogramCPU, NumberOfExecutions);
-	PrintHistogramAndExecTime( histogramCPU, meanDurationCPU );
-	  
+
+	/*	----------------------------------------------------------
+	*	CPU computing time test code.
+	*/
+	try
+	{
+		HistCPU CPU_Test(imageArray, imgArraySize, histogramCPU, NumberOfExecutions);
+		CPU_Test.Test_CPU_Execution();
+		CPU_Test.PrintHistogramAndExecTime();
+		CPU_Test.~HistCPU();
+	}
+	catch (std::exception ex)
+	{
+		printf("CPU_Test throw an exception: %s.\n", ex.what);
+		exit(-1);
+	}
+
+	/*	----------------------------------------------------------
+	*	GPU computing time test code.
+	*/
 	float DurationGPU = GPU_Histogram( imageArray, histogramGPU, imgArraySize );
 	printf("Duration: %f [ms], which is about %f [s]\n", DurationGPU, (DurationGPU/1000.f));
     
+	/*	----------------------------------------------------------
+	*	Cleaning resources.
+	*/
+	
 	free( imageArray );
 	free( histogramCPU );
 	free( histogramGPU );
@@ -70,18 +87,6 @@ int main( int argc, char* argv[])
     return 0;
 }
 
-void PrintHistogramAndExecTime(int* histogram, double durationCPU)
-{
-	long sum = 0;
-	for (int i = 0; i < 256; i++)
-	{
-		printf("%d. %d\n", i, histogram[i]);
-		sum += histogram[i];
-	}
-
-	printf("\nTotal pixel number is: %d\n", sum);
-	printf("Mean histogram computing time: %f [ms]\n", durationCPU);
-}
 
 int img2array(cv::Mat &img, int * &imageArray)
 {
