@@ -1,4 +1,4 @@
-#include "HistCPU.h"
+#include "../Public/HistCPU.h"
 
 /*
 *	Constructor

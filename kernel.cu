@@ -5,8 +5,8 @@
 
 #include <stdio.h>
 #include <string>
-
-#include "HistCPU.h"
+	
+#include "./Public/HistCPU.h"
 
 #include <opencv2/opencv.hpp>
 using namespace cv;
@@ -66,7 +66,7 @@ int main( int argc, char* argv[])
 	}
 	catch (std::exception ex)
 	{
-		printf("CPU_Test throw an exception: %s.\n", ex.what);
+		printf("CPU_Test throw an exception: %s.\n", ex.what() );
 		exit(-1);
 	}
 
