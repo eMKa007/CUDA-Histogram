@@ -4,6 +4,7 @@
 #include "device_launch_parameters.h"
 
 #include <stdio.h>
+#include <iostream>
 #include <string>
 
 #include "CPU_Hist.h"
@@ -56,23 +57,12 @@ int main( int argc, char* argv[])
 
 	int imgArraySize = img2array(img, imageArray);
 
-	//double meanDurationCPU = Test_CPU_Execution(imageArray, imgArraySize, histogramCPU, NumberOfExecutions);
-	//PrintHistogramAndExecTime( histogramCPU, meanDurationCPU );
+	double meanDurationCPU = Test_CPU_Execution(imageArray, imgArraySize, histogramCPU, NumberOfExecutions);
+	PrintHistogramAndExecTime( histogramCPU, meanDurationCPU );
 	  
 	float DurationGPU = GPU_Histogram( imageArray, histogramGPU, imgArraySize );
-	printf(" Duration: %ld [ms], which is about %f [s]\n", DurationGPU, DurationGPU/1000);
-    //// Add vectors in parallel.
-    //cudaError_t cudaStatus = addWithCuda(c, a, b, arraySize);
-    //if (cudaStatus != cudaSuccess) {
-    //    fprintf(stderr, "addWithCuda failed!");
-    //    return 1;
-    //}
-	////GPU device have to be reset before exit. 
-	//cudaStatus = cudaDeviceReset();
-	//if (cudaStatus != cudaSuccess) {
-	//    fprintf(stderr, "cudaDeviceReset failed!");
-	//    return 1;
-
+	printf("Duration: %f [ms], which is about %f [s]\n", DurationGPU, (DurationGPU/1000.f));
+    
 	free( imageArray );
 	free( histogramCPU );
 	free( histogramGPU );
