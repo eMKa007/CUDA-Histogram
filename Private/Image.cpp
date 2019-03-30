@@ -20,7 +20,7 @@ Image::~Image()
 
 /*	----------------------------------------------------------
 *	Function name:	img2array
-*	Parameters:		imageArray <int*>
+*	Parameters:		imageArray <int*>  - Output 1D Array of ints, representing value of each pixel in image.
 *	Used to:		Transform OpenCV data type to typical 1D array of ints representing all of pixels.
 *	Return:			None.
 */
@@ -44,7 +44,7 @@ void Image::img2array( int* imageArray )
 
 /*	----------------------------------------------------------
 *	Function name:	ShowInputImage
-*	Parameters:		WindowName <char*>
+*	Parameters:		WindowName <char*>	-	Title of window name.
 *	Used to:		Show loaded image inside window. Press any key to close it.
 *	Return:			None.
 */

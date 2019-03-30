@@ -1,8 +1,13 @@
 #include "../Public/HistCPU.h"
 
-/*
-*	Constructor
-*	Destructor 
+/*	----------------------------------------------------------
+*	Function name:	HistCPU class constructor.
+*	Parameters:		int* imageArray_in		-	Pointer to input array of pixel values.
+					int imageArraySize_in	-	Size of input image array. Number of pixels in image.
+					int* histogramCPU_in	-	Pointer to array storing computed values.
+					int NumberOfExec_in		-	Number of computing process to estimate mean compute time.
+*	Used to:		Compute histogram with CPU strictly by adding every pixel value occurrence of input image to 256's histogram array.
+*	Return:			Computing time in ms <double>.
 */
 HistCPU::HistCPU(int* imageArray_in, int imageArraySize_in, int* histogramCPU_in, int NumberOfExec_in) : 
 	imageArray(imageArray_in), imageArraySize(imageArraySize_in), histogramCPU(histogramCPU_in), NumberOfExec(NumberOfExec_in)
