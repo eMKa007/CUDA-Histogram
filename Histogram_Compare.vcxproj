@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="packages\vcpkg.D.Programy.VisualCpackManager.1.0.0\build\native\vcpkg.D.Programy.VisualCpackManager.props" Condition="Exists('packages\vcpkg.D.Programy.VisualCpackManager.1.0.0\build\native\vcpkg.D.Programy.VisualCpackManager.props')" />
+  <Import Project="packages\vcpkg.D.Kosz.vcpkgmaster.1.0.0\build\native\vcpkg.D.Kosz.vcpkgmaster.props" Condition="Exists('packages\vcpkg.D.Kosz.vcpkgmaster.1.0.0\build\native\vcpkg.D.Kosz.vcpkgmaster.props')" />
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|x64">
       <Configuration>Debug</Configuration>
@@ -106,8 +108,24 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
     <ClCompile Include="Private\HistCPU.cpp" />
     <ClCompile Include="Private\Image.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config">
+      <SubType>Designer</SubType>
+    </None>
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
     <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 9.0.targets" />
+    <Import Project="packages\vcpkg.D.Kosz.vcpkgmaster.1.0.0\build\native\vcpkg.D.Kosz.vcpkgmaster.targets" Condition="Exists('packages\vcpkg.D.Kosz.vcpkgmaster.1.0.0\build\native\vcpkg.D.Kosz.vcpkgmaster.targets')" />
+    <Import Project="packages\vcpkg.D.Programy.VisualCpackManager.1.0.0\build\native\vcpkg.D.Programy.VisualCpackManager.targets" Condition="Exists('packages\vcpkg.D.Programy.VisualCpackManager.1.0.0\build\native\vcpkg.D.Programy.VisualCpackManager.targets')" />
   </ImportGroup>
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('packages\vcpkg.D.Kosz.vcpkgmaster.1.0.0\build\native\vcpkg.D.Kosz.vcpkgmaster.props')" Text="$([System.String]::Format('$(ErrorText)', 'packages\vcpkg.D.Kosz.vcpkgmaster.1.0.0\build\native\vcpkg.D.Kosz.vcpkgmaster.props'))" />
+    <Error Condition="!Exists('packages\vcpkg.D.Kosz.vcpkgmaster.1.0.0\build\native\vcpkg.D.Kosz.vcpkgmaster.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\vcpkg.D.Kosz.vcpkgmaster.1.0.0\build\native\vcpkg.D.Kosz.vcpkgmaster.targets'))" />
+    <Error Condition="!Exists('packages\vcpkg.D.Programy.VisualCpackManager.1.0.0\build\native\vcpkg.D.Programy.VisualCpackManager.props')" Text="$([System.String]::Format('$(ErrorText)', 'packages\vcpkg.D.Programy.VisualCpackManager.1.0.0\build\native\vcpkg.D.Programy.VisualCpackManager.props'))" />
+    <Error Condition="!Exists('packages\vcpkg.D.Programy.VisualCpackManager.1.0.0\build\native\vcpkg.D.Programy.VisualCpackManager.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\vcpkg.D.Programy.VisualCpackManager.1.0.0\build\native\vcpkg.D.Programy.VisualCpackManager.targets'))" />
+  </Target>
 </Project>

@@ -6,11 +6,14 @@ HistGPU::HistGPU(int* inputArray_in, int inputArraySize_in, int* HistogramGPU_in
 	if( !inputArraySize_in || 0 == inputArraySize_in || !HistogramGPU_in )
 		throw std::invalid_argument("HistCPU class: Received invalid argument in constructor.");
 }
-HistGPU::~HistGPU()
-{
+HistGPU::~HistGPU() { }
 
-}
-
+/*	----------------------------------------------------------
+*	Function name:	RunSingleTest_GPU
+*	Parameters:		None
+*	Used to:		Compute histogram with GPU strictly by adding every pixel value occurrence of input image to 256's histogram array.
+*	Return:			None. Updating values of TotalComputeTime.
+*/
 void HistGPU::RunSingleTest_GPU()
 {
 	int* dev_inputArray = nullptr;
@@ -99,8 +102,12 @@ void HistGPU::RunSingleTest_GPU()
 	cudaFree(dev_Histogram);
 }
 
-
-
+/*	----------------------------------------------------------
+*	Function name:	Test_GPU
+*	Parameters:		unsigned int NumberOfExec - How many times did GPU will be tested.
+*	Used to:		Run GPU test exactly number of times and compute mean execution time.
+*	Return:			None. Update vaues of mean cumpute time. 
+*/
 void HistGPU::Test_GPU(unsigned int NumberOfExec)
 {
 	cudaError_t cudaStatus;
@@ -129,6 +136,12 @@ void HistGPU::Test_GPU(unsigned int NumberOfExec)
 	ComputeMeanTimes(NumberOfExec);
 }
 
+/*	----------------------------------------------------------
+*	Function name:	CreateTimeEvents
+*	Parameters:		None.
+*	Used to:		Create events used to measure compute time.
+*	Return:			None. Events are created.
+*/
 void HistGPU::CreateTimeEvents()
 {
 	cudaError_t cudaStatus;
@@ -142,38 +155,48 @@ void HistGPU::CreateTimeEvents()
 			throw(cudaStatus);
 		}
 	}
-
-	/*cudaStatus = cudaEventCreate(&beforeAlloc);
-	if (cudaStatus != cudaSuccess) {
-		printf("cudaEventCreate() fail! Can not create beforeAlloc event to measure execution time.\n");
-		throw(cudaStatus);
-	}
-
-	cudaStatus = cudaEventCreate(&beforeCompute);
-	if (cudaStatus != cudaSuccess) {
-		printf("cudaEventCreate() fail! Can not create beforeCompute event to measure execution time.\n");
-		throw(cudaStatus);
-	}
-
-	cudaStatus = cudaEventCreate(&afterAlloc);
-	if (cudaStatus != cudaSuccess) {
-		printf("cudaEventCreate() fail! Can not create afterAlloc event to measure execution time.\n");
-		throw(cudaStatus);
-	}
-
-	cudaStatus = cudaEventCreate(&afterCompute);
-	if (cudaStatus != cudaSuccess) {
-		printf("cudaEventCreate() fail! Can not create afterCompute event to measure execution time.\n");
-		throw(cudaStatus);
-	}*/
 }
 
+/*	----------------------------------------------------------
+*	Function name:	ComputeMeanTimes
+*	Parameters:		unsigned int NumberOfExec - number of cycles, GPU was tested.
+*	Used to:		Determine mean value of computing time.
+*	Return:			None. Public values are updated.
+*/
 void HistGPU::ComputeMeanTimes(unsigned int NumberOfExec)
 {
 	msWithAlloc = totalMiliseconds_withAllocation / NumberOfExec;
 	msWithoutAlloc = totalMiliseconds_woAllocation / NumberOfExec;
 }
 
+/*	----------------------------------------------------------
+*	Function name:	PrintMeanComputeTime
+*	Parameters:		None.
+*	Used to:		Print out computed values.
+*	Return:			None.
+*/
+void HistGPU::PrintMeanComputeTime()
+{
+	if (msWithAlloc == 0 || msWithoutAlloc == 0)
+	{
+		printf("GPU mean compute time is 0. Something happen wrong. Did you choose valid image?\n");
+		cudaError_t exception = cudaError_t::cudaErrorInvalidValue;
+		throw exception;
+	}
+		
+	printf("Duration with allocation: %f [ms], which is about %f [s]\n", msWithAlloc, (msWithAlloc / 1000.f));
+	printf("Duration without allocation: %f [ms], which is about %f [s]\n", msWithoutAlloc, (msWithoutAlloc / 1000.f));
+}
+
+
+/*	----------------------------------------------------------
+*	Function name:	GPU_Histogram_Kernel
+*	Parameters:		int* inputArray - Pointer to input array of pixel values. 
+					int inputArraySize - Size of input array.
+					int* HistogramGPU - Pointer to array storing computed values.
+*	Used to:		Compute histogram with GPU. Main GPU function. Multithread function. 
+*	Return:			None. Histogram on GPU is computed. 
+*/
 __global__ void GPU_Histogram_Kernel(int* inputArray, int inputArraySize, int* HistogramGPU)
 {
 	int i = threadIdx.x + blockIdx.x * blockDim.x;

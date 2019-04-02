@@ -58,11 +58,11 @@ int main(int argc, char* argv[])
 	ImagePtr->ShowInputImage("After any key press- computing will start. Wait till end :)");
 
 	/*	----------------------------------------------------------
-	*	CPU computing time test code.
+	*	CPU computing time test case.
 	*/
-	HistCPU CPU_Test(imageArray, imgArraySize, histogramCPU, NumberOfExecutions);
 	try
 	{
+		HistCPU CPU_Test(imageArray, imgArraySize, histogramCPU, NumberOfExecutions);
 		CPU_Test.Test_CPU_Execution();
 		CPU_Test.PrintHistogramAndExecTime();
 		CPU_Test.~HistCPU();
@@ -74,18 +74,19 @@ int main(int argc, char* argv[])
 	}
 
 	/*	----------------------------------------------------------
-	*	GPU computing time test code.
+	*	GPU computing time test case.
 	*/
 	try
 	{
 		HistGPU GPU_Test(imageArray, imgArraySize, histogramGPU);
 		GPU_Test.Test_GPU(NumberOfExecutions);
-		printf("Duration with allocation: %f [ms], which is about %f [s]\n", GPU_Test.msWithAlloc, (GPU_Test.msWithAlloc / 1000.f));
-		printf("Duration without allocation: %f [ms], which is about %f [s]\n", GPU_Test.msWithoutAlloc, (GPU_Test.msWithoutAlloc / 1000.f));
+		GPU_Test.PrintMeanComputeTime();
+		GPU_Test.~HistGPU();
 	}
 	catch (cudaError_t ex)
 	{
 		printf(" Cuda error: %s\n", cudaGetErrorString(ex));
+		exit(-1);
 	}
 
 	/*	----------------------------------------------------------
@@ -102,7 +103,7 @@ int main(int argc, char* argv[])
 *	Function name:	checkArguments
 *	Parameters:		argc <int>, argv <char**>
 *	Used to:		Check input arguments and parse NumberOfExecutions number to valid one.
-*	Return:			Number of executions in integer.
+*	Return:			Number of executions as integer.
 */
 int checkArguments(int argc, char* argv[])
 {
@@ -114,7 +115,7 @@ int checkArguments(int argc, char* argv[])
 
 	NumberOfExecutions = strtod(argv[2], &EndPtr);
 	if (*EndPtr != '\0')
-		return false;
+		return 0;
 
 	return NumberOfExecutions;
 }

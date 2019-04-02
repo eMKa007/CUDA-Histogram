@@ -106,3 +106,4 @@ void HistCPU::PrintHistogram()
 	}
 	printf("\nTotal pixel number is: %d\n", sum);
 }
+

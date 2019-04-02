@@ -8,19 +8,21 @@
 #include <stdlib.h>
 #include <stdexcept>
 
+
 class HistGPU
 {
 public:
 	HistGPU(int* inputArray, int inputArraySize, int* HistogramGPU);
 	~HistGPU();
 
-	// Run Test_GPU() first! Measured time with resource allocation.
+	//Measured time with resource allocation. Run Test_GPU() first! 
 	float			msWithAlloc = 0;
 
-	// Run Test_GPU() first! Measured time without resource allocation. Only computing time.
+	//Measured time without resource allocation. Only computing time. Run Test_GPU() first!
 	float			msWithoutAlloc = 0;
 
 	void			Test_GPU(unsigned int NumberOfExec);
+	void			PrintMeanComputeTime();
 
 private:
 	int*			inputArray = nullptr;
@@ -34,7 +36,6 @@ private:
 
 	void			RunSingleTest_GPU();
 	void			CreateTimeEvents();
-	
 	void			ComputeMeanTimes(unsigned int NumberOfExec);
 };
 
