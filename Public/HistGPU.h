@@ -10,26 +10,35 @@
 
 class HistGPU
 {
-private:
-	int* inputArray = nullptr;
-	int* HistogramGPU = nullptr;
-	unsigned int inputArraySize;
-
-	cudaEvent_t start, stop;
-
 public:
 	HistGPU(int* inputArray, int inputArraySize, int* HistogramGPU);
 	~HistGPU();
 
-	float Test_GPU(unsigned int NumberOfExec);
+	// Run Test_GPU() first! Measured time with resource allocation.
+	float			msWithAlloc = 0;
+
+	// Run Test_GPU() first! Measured time without resource allocation. Only computing time.
+	float			msWithoutAlloc = 0;
+
+	void			Test_GPU(unsigned int NumberOfExec);
 
 private:
-	float RunSingleTest_GPU();
-	void CreateTimeEvents();
+	int*			inputArray = nullptr;
+	int*			HistogramGPU = nullptr;
+	unsigned int	inputArraySize = 0;
+	float			totalMiliseconds_withAllocation = 0;
+	float			totalMiliseconds_woAllocation = 0;
+
+	cudaEvent_t		beforeAlloc, afterAlloc;
+	cudaEvent_t		beforeCompute, afterCompute;
+
+	void			RunSingleTest_GPU();
+	void			CreateTimeEvents();
 	
+	void			ComputeMeanTimes(unsigned int NumberOfExec);
 };
 
-__global__ void GPU_Histogram_Kernel(int* inputArray, int inputArraySize, int* HistogramGPU);
+__global__ void		GPU_Histogram_Kernel(int* inputArray, int inputArraySize, int* HistogramGPU);
 
 
 

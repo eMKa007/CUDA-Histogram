@@ -76,9 +76,17 @@ int main(int argc, char* argv[])
 	/*	----------------------------------------------------------
 	*	GPU computing time test code.
 	*/
-	HistGPU GPU_Test(imageArray, imgArraySize, histogramGPU);
-	float DurationGPU = GPU_Test.Test_GPU(NumberOfExecutions);
-	printf("Duration: %f [ms], which is about %f [s]\n", DurationGPU, (DurationGPU / 1000.f));
+	try
+	{
+		HistGPU GPU_Test(imageArray, imgArraySize, histogramGPU);
+		GPU_Test.Test_GPU(NumberOfExecutions);
+		printf("Duration with allocation: %f [ms], which is about %f [s]\n", GPU_Test.msWithAlloc, (GPU_Test.msWithAlloc / 1000.f));
+		printf("Duration without allocation: %f [ms], which is about %f [s]\n", GPU_Test.msWithoutAlloc, (GPU_Test.msWithoutAlloc / 1000.f));
+	}
+	catch (cudaError_t ex)
+	{
+		printf(" Cuda error: %s\n", cudaGetErrorString(ex));
+	}
 
 	/*	----------------------------------------------------------
 	*	Cleaning resources.
