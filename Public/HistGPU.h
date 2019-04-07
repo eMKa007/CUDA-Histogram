@@ -23,6 +23,7 @@ public:
 
 	void			Test_GPU(unsigned int NumberOfExec);
 	void			PrintMeanComputeTime();
+	void			PrintGPUInfo();
 
 private:
 	int*			inputArray = nullptr;
@@ -34,9 +35,10 @@ private:
 	cudaEvent_t		beforeAlloc, afterAlloc;
 	cudaEvent_t		beforeCompute, afterCompute;
 
-	void			RunSingleTest_GPU();
+	void			RunSingleTest_GPU(int blocks);
 	void			CreateTimeEvents();
 	void			ComputeMeanTimes(unsigned int NumberOfExec);
+
 };
 
 __global__ void		GPU_Histogram_Kernel(int* inputArray, int inputArraySize, int* HistogramGPU);

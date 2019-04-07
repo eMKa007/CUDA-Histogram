@@ -71,38 +71,32 @@ void MainTestFunction(Image* ImagePtr, unsigned int imgArraySize, int NumberOfEx
 	ImagePtr->img2array(imageArray);
 	ImagePtr->ShowInputImage("After any key press- computing will start. Wait till end :)");
 
-	/*	----------------------------------------------------------
-	*	GPU computing time test case.
-	*/
 	try
 	{
+		/*	----------------------------------------------------------
+		*	GPU computing time test case.
+		*/
 		HistGPU GPU_Test(imageArray, imgArraySize, histogramGPU);
+		GPU_Test.PrintGPUInfo();
 		GPU_Test.Test_GPU(NumberOfExecutions);
 		GPU_Test.PrintMeanComputeTime();
 		GPU_Test.~HistGPU();
+
+		/*	----------------------------------------------------------
+		*	CPU computing time test case.
+		*/
+		HistCPU CPU_Test(imageArray, imgArraySize, histogramCPU, NumberOfExecutions);
+		CPU_Test.PrintCPUInfo();
+		CPU_Test.Test_CPU_Execution();
+		CPU_Test.PrintComputeTime();
+		CPU_Test.~HistCPU();
+
 	}
 	catch (cudaError_t ex)
 	{
-		printf(" Cuda error: %s\n", cudaGetErrorString(ex));
+		printf("Computing error: %s\n", cudaGetErrorString(ex));
 		exit(-1);
 	}
-
-	/*	----------------------------------------------------------
-	*	CPU computing time test case.
-	*/
-	try
-	{
-		HistCPU CPU_Test(imageArray, imgArraySize, histogramCPU, NumberOfExecutions);
-		CPU_Test.Test_CPU_Execution();
-		CPU_Test.PrintHistogramAndExecTime();
-		CPU_Test.~HistCPU();
-	}
-	catch (std::exception ex)
-	{
-		printf("CPU_Test throw an exception: %s.\n", ex.what());
-		exit(-1);
-	}
-
 
 	/*	----------------------------------------------------------
 	*	Cleaning resources.

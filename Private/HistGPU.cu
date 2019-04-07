@@ -14,7 +14,7 @@ HistGPU::~HistGPU() { }
 *	Used to:		Compute histogram with GPU strictly by adding every pixel value occurrence of input image to 256's histogram array.
 *	Return:			None. Updating values of TotalComputeTime.
 */
-void HistGPU::RunSingleTest_GPU()
+void HistGPU::RunSingleTest_GPU(int blocks)
 {
 	int* dev_inputArray = nullptr;
 	int* dev_Histogram = nullptr;
@@ -52,19 +52,9 @@ void HistGPU::RunSingleTest_GPU()
 		throw(cudaStatus);
 	}
 
-	//Check available number of multiprocessors on GPU device- it will be used in kernel function.
-	cudaDeviceProp properties;
-	cudaStatus = cudaGetDeviceProperties(&properties, 0);
-	if (cudaStatus != cudaSuccess)
-	{
-		printf("cudaGetDeviceProperties() fail.");
-		throw(cudaStatus);
-	}
-
 	cudaEventRecord(beforeCompute);
 
 	//Launch kernel. ==============================================================================
-	int blocks = properties.multiProcessorCount;
 	GPU_Histogram_Kernel << <blocks*16, 256 >> > (dev_inputArray, inputArraySize, dev_Histogram);
 
 	cudaEventRecord(afterCompute);
@@ -122,19 +112,20 @@ void HistGPU::Test_GPU(unsigned int NumberOfExec)
 
 	// Cuda events used to measure execution time.
 	CreateTimeEvents();
+
+	//Check available number of multiprocessors on GPU device- it will be used in kernel function.
+	cudaDeviceProp properties;
+	cudaStatus = cudaGetDeviceProperties(&properties, 0);
+	if (cudaStatus != cudaSuccess)
+	{
+		printf("cudaGetDeviceProperties() fail.");
+		throw(cudaStatus);
+	}
 	
 	for (int TryNumber = 0; TryNumber < NumberOfExec; TryNumber++)
 	{
-		RunSingleTest_GPU();
+		RunSingleTest_GPU( properties.multiProcessorCount );
 	}
-
-	long sum = 0;
-	for (int i = 0; i < 256; i++)
-	{
-		printf("%d. %d\n", i, HistogramGPU[i]);
-		sum += HistogramGPU[i];
-	}
-	printf("\nTotal pixel number is: %d\n", sum);
 
 	cudaEventDestroy(beforeAlloc);
 	cudaEventDestroy(afterAlloc);
@@ -178,6 +169,32 @@ void HistGPU::ComputeMeanTimes(unsigned int NumberOfExec)
 }
 
 /*	----------------------------------------------------------
+*	Function name:	PrintGPUInfo
+*	Parameters:		None.
+*	Used to:		Printout to stdout information about GPU device.
+*	Return:			None.
+*/
+void HistGPU::PrintGPUInfo()
+{
+	cudaDeviceProp inf;
+	cudaError_t cudaStatus = cudaGetDeviceProperties(&inf, 0);
+	if (cudaStatus != cudaSuccess)
+	{
+		printf("cudaGetDeviceProperties() fail.");
+		throw(cudaStatus);
+	}
+
+	printf("*************************** CPU Info  *****************************\n");
+	printf("GPU Device Name: \t\t%s\n", inf.name);
+	printf("Number of Muliprocessors:\t%d\n", inf.multiProcessorCount);
+	printf("Clock rate:\t\t\t%f [GHz]\n", inf.clockRate/1000000.f);
+	printf("Major compute capability:\t\t%d\n", inf.major);
+	printf("Max size of each dimension block:\t%d\n", inf.maxThreadsDim[0], inf.maxThreadsDim[1], inf.maxThreadsDim[2]);
+	printf("Max number of threads per block:\t%d\n", inf.maxThreadsPerBlock);
+	printf("*******************************************************************\n");
+}
+
+/*	----------------------------------------------------------
 *	Function name:	PrintMeanComputeTime
 *	Parameters:		None.
 *	Used to:		Print out computed values.
@@ -192,8 +209,9 @@ void HistGPU::PrintMeanComputeTime()
 		throw exception;
 	}
 		
-	printf("Duration with allocation: %f [ms], which is about %f [s]\n", msWithAlloc, (msWithAlloc / 1000.f));
-	printf("Duration without allocation: %f [ms], which is about %f [s]\n", msWithoutAlloc, (msWithoutAlloc / 1000.f));
+	printf("Mean histogram computing time on GPU:\n");
+	printf("  - with memory allocation: %f[ms], which is about %f[s]\n", msWithAlloc, (msWithAlloc / 1000.f));
+	printf("  - without memory allocation: %f [ms], which is about %f [s]\n\n", msWithoutAlloc, (msWithoutAlloc / 1000.f));
 }
 
 /*	----------------------------------------------------------
@@ -207,7 +225,7 @@ void HistGPU::PrintMeanComputeTime()
 __global__ void GPU_Histogram_Kernel(int* inputArray, int inputArraySize, int* HistogramGPU)
 {
 	//Create and set to 0 local memory for single block.
-		__shared__ unsigned int temp[256];
+	__shared__ unsigned int temp[256];
 	temp[threadIdx.x] = 0;
 	__syncthreads();
 

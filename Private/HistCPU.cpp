@@ -69,27 +69,53 @@ void HistCPU::Test_CPU_Execution()
 }
 
 /*	----------------------------------------------------------
-*	Function name:	PrintHistogramAndExecTime
-*	Parameters:		None
-*	Used to:		Printout to stdout computed histogram and information about it's mean computing time.
-*	Return:			None
-*/
-void HistCPU::PrintHistogramAndExecTime()
-{
-	PrintHistogram();
-	PrintComputeTime();	
-}
-
-/*	----------------------------------------------------------
-*	Function name:	PrintHistogram
+*	Function name:	PrintComputeTime
 *	Parameters:		None
 *	Used to:		Printout to stdout information about histogram's mean computing time.
 *	Return:			None
 */
 void HistCPU::PrintComputeTime()
 {
-	printf("Mean histogram computing time: %f [ms]\n", MeanComputeTime);
+	printf("Mean histogram computing time on CPU:\n");
+	printf("  - without memory allocation: %f [ms], which is about %f[s]\n", MeanComputeTime, MeanComputeTime / 1000.f);
 }
+
+/*	----------------------------------------------------------
+*	Function name:	PrintCPUInfo
+*	Parameters:		None
+*	Used to:		Printout to stdout information about CPU device.
+					Code partly from: https://stackoverflow.com/questions/850774/how-to-determine-the-hardware-cpu-and-ram-on-a-machine
+*	Return:			None
+*/
+void HistCPU::PrintCPUInfo()
+{
+	LPSYSTEM_INFO inf = (LPSYSTEM_INFO)calloc(1, sizeof(LPSYSTEM_INFO));
+	GetSystemInfo(inf);
+
+	int CPUInfo[4] = { -1 };
+	unsigned   nExIds, i = 0;
+	char CPUBrandString[0x40];
+	// Get the information associated with each extended ID.
+	__cpuid(CPUInfo, 0x80000000);
+	nExIds = CPUInfo[0];
+	for (i = 0x80000000; i <= nExIds; ++i)
+	{
+		__cpuid(CPUInfo, i);
+		// Interpret CPU brand string
+		if (i == 0x80000002)
+			memcpy(CPUBrandString, CPUInfo, sizeof(CPUInfo));
+		else if (i == 0x80000003)
+			memcpy(CPUBrandString + 16, CPUInfo, sizeof(CPUInfo));
+		else if (i == 0x80000004)
+			memcpy(CPUBrandString + 32, CPUInfo, sizeof(CPUInfo));
+	}
+	
+	printf("*************************** CPU Info  *****************************\n");
+	printf("CPU brand:\t\t%s\n", CPUBrandString);
+	printf("Number of processors:\t%d\n", inf->dwNumberOfProcessors);
+	printf("*******************************************************************\n");
+}
+
 
 /*	----------------------------------------------------------
 *	Function name:	PrintComputeTime
