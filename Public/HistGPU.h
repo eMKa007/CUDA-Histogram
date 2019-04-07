@@ -7,12 +7,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdexcept>
-
+#include <Windows.h>
 
 class HistGPU
 {
 public:
-	HistGPU(int* inputArray, int inputArraySize, int* HistogramGPU);
+	HistGPU(int* inputArray, int inputArraySize);
 	~HistGPU();
 
 	//Measured time with resource allocation. Run Test_GPU() first! 

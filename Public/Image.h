@@ -2,6 +2,8 @@
 
 #include <exception>
 #include <opencv2/opencv.hpp>
+#include <Windows.h>
+
 using namespace cv;
 
 class Image
@@ -16,5 +18,6 @@ public:
 	void			ShowInputImage( char* WindowName );
 	void			img2array( int* imageArray );
 	unsigned int	GetArraySize();
+	void			PrintImageInfo( const char* Name );
 };
 

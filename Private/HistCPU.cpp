@@ -9,10 +9,12 @@
 *	Used to:		Compute histogram with CPU strictly by adding every pixel value occurrence of input image to 256's histogram array.
 *	Return:			Computing time in ms <double>.
 */
-HistCPU::HistCPU(int* imageArray_in, int imageArraySize_in, int* histogramCPU_in, int NumberOfExec_in) : 
-	imageArray(imageArray_in), imageArraySize(imageArraySize_in), histogramCPU(histogramCPU_in), NumberOfExec(NumberOfExec_in)
+HistCPU::HistCPU(int* imageArray_in, int imageArraySize_in, int NumberOfExec_in) : 
+	imageArray(imageArray_in), imageArraySize(imageArraySize_in), NumberOfExec(NumberOfExec_in)
 {
-	if (!imageArray_in || 0 == imageArraySize_in || !histogramCPU_in || 0 == NumberOfExec_in)
+	histogramCPU = new int[256]();
+
+	if (!imageArray_in || 0 == imageArraySize_in || !histogramCPU || (0 == NumberOfExec_in) )
 		throw std::invalid_argument("HistCPU class: Received invalid argument in constructor.");
 }
 HistCPU::~HistCPU()
@@ -76,8 +78,14 @@ void HistCPU::Test_CPU_Execution()
 */
 void HistCPU::PrintComputeTime()
 {
+	HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+
 	printf("Mean histogram computing time on CPU:\n");
-	printf("  - without memory allocation: %f [ms], which is about %f[s]\n", MeanComputeTime, MeanComputeTime / 1000.f);
+	printf("  - without memory allocation: ");
+	SetConsoleTextAttribute(hConsole, 10);	printf("%f[ms]", MeanComputeTime);
+	SetConsoleTextAttribute(hConsole, 7);	printf(", which is about ");
+	SetConsoleTextAttribute(hConsole, 10);	printf("%f[s]\n\n", (MeanComputeTime / 1000.f));
+	SetConsoleTextAttribute(hConsole, 7);
 }
 
 /*	----------------------------------------------------------
@@ -90,6 +98,8 @@ void HistCPU::PrintComputeTime()
 void HistCPU::PrintCPUInfo()
 {
 	LPSYSTEM_INFO inf = (LPSYSTEM_INFO)calloc(1, sizeof(LPSYSTEM_INFO));
+	HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+
 	GetSystemInfo(inf);
 
 	int CPUInfo[4] = { -1 };
@@ -110,27 +120,12 @@ void HistCPU::PrintCPUInfo()
 			memcpy(CPUBrandString + 32, CPUInfo, sizeof(CPUInfo));
 	}
 	
-	printf("*************************** CPU Info  *****************************\n");
+	SetConsoleTextAttribute(hConsole, 11); 
+	printf("**************************  CPU Info  ****************************\n");
+	SetConsoleTextAttribute(hConsole, 7);
 	printf("CPU brand:\t\t%s\n", CPUBrandString);
 	printf("Number of processors:\t%d\n", inf->dwNumberOfProcessors);
+	SetConsoleTextAttribute(hConsole, 11);
 	printf("*******************************************************************\n");
+	SetConsoleTextAttribute(hConsole, 7);
 }
-
-
-/*	----------------------------------------------------------
-*	Function name:	PrintComputeTime
-*	Parameters:		None
-*	Used to:		Printout to stdout computed histogram.
-*	Return:			None
-*/
-void HistCPU::PrintHistogram()
-{
-	long sum = 0;
-	for (int i = 0; i < 256; i++)
-	{
-		printf("%d. %d\n", i, histogramCPU[i]);
-		sum += histogramCPU[i];
-	}
-	printf("\nTotal pixel number is: %d\n", sum);
-}
-

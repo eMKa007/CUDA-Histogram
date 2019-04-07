@@ -8,7 +8,7 @@
 class HistCPU
 {
 public:
-	HistCPU(int* imageArray, int imageArraySize, int* histogramCPU, int NumberOfExec);
+	HistCPU(int* imageArray, int imageArraySize, int NumberOfExec);
 	~HistCPU();
 
 	int*		histogramCPU = nullptr;
@@ -23,8 +23,6 @@ private:
 	int			NumberOfExec	= 0;
 	double		MeanComputeTime = 0;
 
-	double		RunSingleTest_CPU();
-	void		PrintHistogram();
-	
+	double		RunSingleTest_CPU();	
 };
 

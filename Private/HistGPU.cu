@@ -1,9 +1,11 @@
 #include "../Public/HistGPU.h"
 
-HistGPU::HistGPU(int* inputArray_in, int inputArraySize_in, int* HistogramGPU_in) :
-	inputArray(inputArray_in), inputArraySize(inputArraySize_in), HistogramGPU(HistogramGPU_in)
+HistGPU::HistGPU(int* inputArray_in, int inputArraySize_in) :
+	inputArray(inputArray_in), inputArraySize(inputArraySize_in)
 {
-	if( !inputArraySize_in || 0 == inputArraySize_in || !HistogramGPU_in )
+	HistogramGPU = new int[256]();
+
+	if( !inputArraySize_in || 0 == inputArraySize_in || !HistogramGPU)
 		throw std::invalid_argument("HistCPU class: Received invalid argument in constructor.");
 }
 HistGPU::~HistGPU() { }
@@ -171,12 +173,14 @@ void HistGPU::ComputeMeanTimes(unsigned int NumberOfExec)
 /*	----------------------------------------------------------
 *	Function name:	PrintGPUInfo
 *	Parameters:		None.
-*	Used to:		Printout to stdout information about GPU device.
+*	Used to:		Print to stdout information about GPU device.
 *	Return:			None.
 */
 void HistGPU::PrintGPUInfo()
 {
 	cudaDeviceProp inf;
+	HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+
 	cudaError_t cudaStatus = cudaGetDeviceProperties(&inf, 0);
 	if (cudaStatus != cudaSuccess)
 	{
@@ -184,14 +188,19 @@ void HistGPU::PrintGPUInfo()
 		throw(cudaStatus);
 	}
 
-	printf("*************************** CPU Info  *****************************\n");
+	SetConsoleTextAttribute(hConsole, 11);
+	printf("**************************  GPU Info  ****************************\n");
+	SetConsoleTextAttribute(hConsole, 7);
 	printf("GPU Device Name: \t\t%s\n", inf.name);
 	printf("Number of Muliprocessors:\t%d\n", inf.multiProcessorCount);
 	printf("Clock rate:\t\t\t%f [GHz]\n", inf.clockRate/1000000.f);
 	printf("Major compute capability:\t\t%d\n", inf.major);
-	printf("Max size of each dimension block:\t%d\n", inf.maxThreadsDim[0], inf.maxThreadsDim[1], inf.maxThreadsDim[2]);
+	printf("Max size of each dimension block:\t%d, %d, %d\n", inf.maxThreadsDim[0], inf.maxThreadsDim[1], inf.maxThreadsDim[2]);
 	printf("Max number of threads per block:\t%d\n", inf.maxThreadsPerBlock);
+	SetConsoleTextAttribute(hConsole, 11);
 	printf("*******************************************************************\n");
+	SetConsoleTextAttribute(hConsole, 7);
+
 }
 
 /*	----------------------------------------------------------
@@ -202,6 +211,7 @@ void HistGPU::PrintGPUInfo()
 */
 void HistGPU::PrintMeanComputeTime()
 {
+	HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
 	if (msWithAlloc == 0 || msWithoutAlloc == 0)
 	{
 		printf("GPU mean compute time is 0. Something happen wrong. Did you choose valid image?\n");
@@ -210,8 +220,15 @@ void HistGPU::PrintMeanComputeTime()
 	}
 		
 	printf("Mean histogram computing time on GPU:\n");
-	printf("  - with memory allocation: %f[ms], which is about %f[s]\n", msWithAlloc, (msWithAlloc / 1000.f));
-	printf("  - without memory allocation: %f [ms], which is about %f [s]\n\n", msWithoutAlloc, (msWithoutAlloc / 1000.f));
+	printf("  - with memory allocation: ");
+	SetConsoleTextAttribute(hConsole, 10);	printf("%f[ms]", msWithAlloc);
+	SetConsoleTextAttribute(hConsole, 7);	printf(", which is about ");
+	SetConsoleTextAttribute(hConsole, 10);	printf("%f[s]\n",(msWithAlloc / 1000.f));
+	SetConsoleTextAttribute(hConsole, 7);	printf("  - without memory allocation: ");
+	SetConsoleTextAttribute(hConsole, 10);	printf("%f[ms]", msWithoutAlloc);
+	SetConsoleTextAttribute(hConsole, 7);	printf(", which is about ");
+	SetConsoleTextAttribute(hConsole, 10);	printf("%f[s]\n\n", (msWithoutAlloc / 1000.f));
+	SetConsoleTextAttribute(hConsole, 7);
 }
 
 /*	----------------------------------------------------------

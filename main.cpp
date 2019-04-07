@@ -33,6 +33,7 @@ int main(int argc, char* argv[])
 	{
 		ImagePtr = new Image(argv[1]);
 		imgArraySize = ImagePtr->GetArraySize();
+		ImagePtr->PrintImageInfo(argv[1]);
 	}
 	catch (Exception ex)
 	{
@@ -47,9 +48,11 @@ int main(int argc, char* argv[])
 
 /*	----------------------------------------------------------
 *	Function name:	MainTestFunction
-*	Parameters:		Image* ImagePtr, unsigned int imgArraySize
-*	Used to:		
-*	Return:			
+*	Parameters:		Image* ImagePtr - pointer to class holding input image.
+					unsigned int imgArraySize - size of input image (rows * cols). 
+					int NumberOfExecutions - number of computing tests. 
+*	Used to:		Test CPU/GPU histogram mean computing time. 
+*	Return:			None.
 */
 void MainTestFunction(Image* ImagePtr, unsigned int imgArraySize, int NumberOfExecutions)
 {
@@ -57,10 +60,7 @@ void MainTestFunction(Image* ImagePtr, unsigned int imgArraySize, int NumberOfEx
 	*	Alloc memory for 1d image pixel table, and two histograms.
 	*/
 	int* imageArray = new int[imgArraySize]();
-	int* histogramCPU = new int[256]();
-	int* histogramGPU = new int[256]();
-
-	if (!imageArray || !histogramCPU || !histogramGPU)
+	if (!imageArray )
 	{
 		printf("Memory allocation error.");
 		exit(-1);
@@ -77,7 +77,7 @@ void MainTestFunction(Image* ImagePtr, unsigned int imgArraySize, int NumberOfEx
 		/*	----------------------------------------------------------
 		*	GPU computing time test case.
 		*/
-		HistGPU GPU_Test(imageArray, imgArraySize, histogramGPU);
+		HistGPU GPU_Test(imageArray, imgArraySize);
 		GPU_Test.PrintGPUInfo();
 		GPU_Test.Test_GPU(NumberOfExecutions);
 		GPU_Test.PrintMeanComputeTime();
@@ -85,7 +85,7 @@ void MainTestFunction(Image* ImagePtr, unsigned int imgArraySize, int NumberOfEx
 		/*	----------------------------------------------------------
 		*	CPU computing time test case.
 		*/
-		HistCPU CPU_Test(imageArray, imgArraySize, histogramCPU, NumberOfExecutions);
+		HistCPU CPU_Test(imageArray, imgArraySize, NumberOfExecutions);
 		CPU_Test.PrintCPUInfo();
 		CPU_Test.Test_CPU_Execution();
 		CPU_Test.PrintComputeTime();
@@ -105,12 +105,11 @@ void MainTestFunction(Image* ImagePtr, unsigned int imgArraySize, int NumberOfEx
 	*	Cleaning resources.
 	*/
 	delete[] imageArray;
-	delete[] histogramCPU;
-	delete[] histogramGPU;
 }
 
 void CheckHistogramsEquality(HistGPU &GPU_Test, HistCPU &CPU_Test)
 {
+	HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
 	//Checking if two histograms are the same. 
 	int* temp = new int[256]();
 	for (int i = 0; i < 256; i++)
@@ -120,6 +119,11 @@ void CheckHistogramsEquality(HistGPU &GPU_Test, HistCPU &CPU_Test)
 			printf("GPU/CPU Histogram mismatch at: %d bin. value = %d", i, temp[i]);
 	}
 	delete[] temp;
+
+	SetConsoleTextAttribute(hConsole, 14);	
+	printf("No difference found. Computed Histograms are equal.\n");
+	SetConsoleTextAttribute(hConsole, 7);
+
 }
 
 /*	----------------------------------------------------------
@@ -140,6 +144,9 @@ int checkArguments(int argc, char* argv[])
 	if (*EndPtr != '\0')
 		return 0;
 
+	NumberOfExecutions = (NumberOfExecutions > 1000) ? 1000 : NumberOfExecutions;
+	NumberOfExecutions = (NumberOfExecutions < 0) ? 0 : NumberOfExecutions;
+
 	return NumberOfExecutions;
 }
 
@@ -151,7 +158,9 @@ int checkArguments(int argc, char* argv[])
 */
 void PrintUsage()
 {
-	printf("Usage: \n\tprogramname.exe <imageName.jpg> <NumberOfExecutions>\n");
-	printf("\n\tTips: Locate image in the same folder as this *.exe file.\n");
-	printf("\tNumberOfExecutions [integer] above 10000 can cause problems. Optimal: 1000 - 5000.\n");
+	printf("Usage: \nHistogramTest.exe <imageName.jpg> <NumberOfExecutions>\n");
+	printf("   Where: <imageName.jpg> - path to image of which histogram will be computed.\n");
+	printf("   Where: <NumberOfExecutions> - number of tests computing time.\n");
+	printf("\nTips: Locate image in the same folder as this *.exe file.\n");
+	printf("   NumberOfExecutions [integer] above 1000 can cause problems. \n   Optimal: 100 - 500, max- 1000.\n");
 }

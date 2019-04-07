@@ -66,3 +66,26 @@ unsigned int Image::GetArraySize()
 {
 	return Img.rows*Img.cols;
 }
+
+/*	----------------------------------------------------------
+*	Function name:	PrintImageInfo
+*	Parameters:		const char* Name - patch to image.
+*	Used to:		Printout of Image properties.
+*	Return:			None.
+*/
+void Image::PrintImageInfo( const char* Name )
+{
+
+	HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+	
+	SetConsoleTextAttribute(hConsole, 11);
+	printf("*************************  Image Info  ***************************\n");
+	SetConsoleTextAttribute(hConsole, 7);
+	printf("Name of image:\t\t%s\n", Name);
+	printf("Number of columns:\t%d\n", Img.cols);
+	printf("Number of rows:\t\t%d\n", Img.rows);
+	printf("Total pixels:\t\t%d\n", Img.rows * Img.cols);
+	SetConsoleTextAttribute(hConsole, 11);
+	printf("*******************************************************************\n");
+	SetConsoleTextAttribute(hConsole, 7);
+}
