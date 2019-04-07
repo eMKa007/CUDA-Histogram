@@ -21,13 +21,14 @@ public:
 	//Measured time without resource allocation. Only computing time. Run Test_GPU() first!
 	float			msWithoutAlloc = 0;
 
+	int*			HistogramGPU = nullptr;
+
 	void			Test_GPU(unsigned int NumberOfExec);
 	void			PrintMeanComputeTime();
 	void			PrintGPUInfo();
 
 private:
 	int*			inputArray = nullptr;
-	int*			HistogramGPU = nullptr;
 	unsigned int	inputArraySize = 0;
 	float			totalMiliseconds_withAllocation = 0;
 	float			totalMiliseconds_woAllocation = 0;

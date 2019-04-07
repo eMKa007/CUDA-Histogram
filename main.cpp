@@ -8,6 +8,7 @@
 
 /* Functions */
 void MainTestFunction(Image* ImagePtr,  unsigned int imgArraySize, int NumberOfExecutions);
+void CheckHistogramsEquality(HistGPU &GPU_Test, HistCPU &CPU_Test);
 int checkArguments(int argc, char* argv[]);
 void PrintUsage();
 
@@ -80,7 +81,6 @@ void MainTestFunction(Image* ImagePtr, unsigned int imgArraySize, int NumberOfEx
 		GPU_Test.PrintGPUInfo();
 		GPU_Test.Test_GPU(NumberOfExecutions);
 		GPU_Test.PrintMeanComputeTime();
-		GPU_Test.~HistGPU();
 
 		/*	----------------------------------------------------------
 		*	CPU computing time test case.
@@ -89,8 +89,11 @@ void MainTestFunction(Image* ImagePtr, unsigned int imgArraySize, int NumberOfEx
 		CPU_Test.PrintCPUInfo();
 		CPU_Test.Test_CPU_Execution();
 		CPU_Test.PrintComputeTime();
-		CPU_Test.~HistCPU();
 
+		CheckHistogramsEquality(GPU_Test, CPU_Test);
+
+		CPU_Test.~HistCPU();
+		GPU_Test.~HistGPU();
 	}
 	catch (cudaError_t ex)
 	{
@@ -104,6 +107,19 @@ void MainTestFunction(Image* ImagePtr, unsigned int imgArraySize, int NumberOfEx
 	delete[] imageArray;
 	delete[] histogramCPU;
 	delete[] histogramGPU;
+}
+
+void CheckHistogramsEquality(HistGPU &GPU_Test, HistCPU &CPU_Test)
+{
+	//Checking if two histograms are the same. 
+	int* temp = new int[256]();
+	for (int i = 0; i < 256; i++)
+	{
+		temp[i] = GPU_Test.HistogramGPU[i] - CPU_Test.histogramCPU[i];
+		if (temp[i] != 0)
+			printf("GPU/CPU Histogram mismatch at: %d bin. value = %d", i, temp[i]);
+	}
+	delete[] temp;
 }
 
 /*	----------------------------------------------------------
@@ -139,6 +155,3 @@ void PrintUsage()
 	printf("\n\tTips: Locate image in the same folder as this *.exe file.\n");
 	printf("\tNumberOfExecutions [integer] above 10000 can cause problems. Optimal: 1000 - 5000.\n");
 }
-
-
-
