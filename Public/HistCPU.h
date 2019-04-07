@@ -20,7 +20,7 @@ class HistCPU
 		void		PrintHistogramAndExecTime();
 
 	private:
-		double		CPU_Histogram();
+		double		RunSingleTest_CPU();
 		void		PrintComputeTime();
 		void		PrintHistogram();
 	

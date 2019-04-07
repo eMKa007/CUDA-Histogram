@@ -7,6 +7,7 @@
 #include "Public/HistGPU.h"
 
 /* Functions */
+void MainTestFunction(Image* ImagePtr,  unsigned int imgArraySize, int NumberOfExecutions);
 int checkArguments(int argc, char* argv[]);
 void PrintUsage();
 
@@ -38,12 +39,25 @@ int main(int argc, char* argv[])
 		exit(-1);
 	}
 
+	MainTestFunction(ImagePtr, imgArraySize, NumberOfExecutions);
+
+	return 0;
+}
+
+/*	----------------------------------------------------------
+*	Function name:	MainTestFunction
+*	Parameters:		Image* ImagePtr, unsigned int imgArraySize
+*	Used to:		
+*	Return:			
+*/
+void MainTestFunction(Image* ImagePtr, unsigned int imgArraySize, int NumberOfExecutions)
+{
 	/*	----------------------------------------------------------
 	*	Alloc memory for 1d image pixel table, and two histograms.
 	*/
-	int* imageArray = (int*)calloc(imgArraySize, sizeof(int));
-	int* histogramCPU = (int*)calloc(256, sizeof(int));
-	int* histogramGPU = (int*)calloc(256, sizeof(int));
+	int* imageArray = new int[imgArraySize]();
+	int* histogramCPU = new int[256]();
+	int* histogramGPU = new int[256]();
 
 	if (!imageArray || !histogramCPU || !histogramGPU)
 	{
@@ -56,22 +70,6 @@ int main(int argc, char* argv[])
 	*/
 	ImagePtr->img2array(imageArray);
 	ImagePtr->ShowInputImage("After any key press- computing will start. Wait till end :)");
-
-	/*	----------------------------------------------------------
-	*	CPU computing time test case.
-	*/
-	try
-	{
-		HistCPU CPU_Test(imageArray, imgArraySize, histogramCPU, NumberOfExecutions);
-		CPU_Test.Test_CPU_Execution();
-		CPU_Test.PrintHistogramAndExecTime();
-		CPU_Test.~HistCPU();
-	}
-	catch (std::exception ex)
-	{
-		printf("CPU_Test throw an exception: %s.\n", ex.what());
-		exit(-1);
-	}
 
 	/*	----------------------------------------------------------
 	*	GPU computing time test case.
@@ -90,13 +88,28 @@ int main(int argc, char* argv[])
 	}
 
 	/*	----------------------------------------------------------
+	*	CPU computing time test case.
+	*/
+	try
+	{
+		HistCPU CPU_Test(imageArray, imgArraySize, histogramCPU, NumberOfExecutions);
+		CPU_Test.Test_CPU_Execution();
+		CPU_Test.PrintHistogramAndExecTime();
+		CPU_Test.~HistCPU();
+	}
+	catch (std::exception ex)
+	{
+		printf("CPU_Test throw an exception: %s.\n", ex.what());
+		exit(-1);
+	}
+
+
+	/*	----------------------------------------------------------
 	*	Cleaning resources.
 	*/
-	free(imageArray);
-	free(histogramCPU);
-	free(histogramGPU);
-
-	return 0;
+	delete[] imageArray;
+	delete[] histogramCPU;
+	delete[] histogramGPU;
 }
 
 /*	----------------------------------------------------------

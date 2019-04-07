@@ -25,9 +25,10 @@ HistCPU::~HistCPU()
 *	Used to:		Compute histogram with CPU strictly by adding every pixel value occurrence of input image to 256's histogram array.
 *	Return:			Computing time in ms <double>.
 */	
-double HistCPU::CPU_Histogram()
+double HistCPU::RunSingleTest_CPU()
 {
 	int idx = 0;
+	
 	std::chrono::high_resolution_clock::time_point clockBefore = std::chrono::high_resolution_clock::now();
 
 	while (idx < imageArraySize)
@@ -55,7 +56,7 @@ void HistCPU::Test_CPU_Execution()
 
 	while( 1 )
 	{
-		totalExecTime += CPU_Histogram();
+		totalExecTime += RunSingleTest_CPU();
 		trialNo++;
 
 		if (trialNo > NumberOfExec)

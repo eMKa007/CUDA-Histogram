@@ -65,7 +65,7 @@ void HistGPU::RunSingleTest_GPU()
 
 	//Launch kernel. ==============================================================================
 	int blocks = properties.multiProcessorCount;
-	GPU_Histogram_Kernel << <blocks * 2, 256 >> > (dev_inputArray, inputArraySize, dev_Histogram);
+	GPU_Histogram_Kernel << <blocks*16, 256 >> > (dev_inputArray, inputArraySize, dev_Histogram);
 
 	cudaEventRecord(afterCompute);
 	cudaEventSynchronize(afterCompute);
@@ -128,6 +128,14 @@ void HistGPU::Test_GPU(unsigned int NumberOfExec)
 		RunSingleTest_GPU();
 	}
 
+	long sum = 0;
+	for (int i = 0; i < 256; i++)
+	{
+		printf("%d. %d\n", i, HistogramGPU[i]);
+		sum += HistogramGPU[i];
+	}
+	printf("\nTotal pixel number is: %d\n", sum);
+
 	cudaEventDestroy(beforeAlloc);
 	cudaEventDestroy(afterAlloc);
 	cudaEventDestroy(beforeCompute);
@@ -188,7 +196,6 @@ void HistGPU::PrintMeanComputeTime()
 	printf("Duration without allocation: %f [ms], which is about %f [s]\n", msWithoutAlloc, (msWithoutAlloc / 1000.f));
 }
 
-
 /*	----------------------------------------------------------
 *	Function name:	GPU_Histogram_Kernel
 *	Parameters:		int* inputArray - Pointer to input array of pixel values. 
@@ -199,12 +206,20 @@ void HistGPU::PrintMeanComputeTime()
 */
 __global__ void GPU_Histogram_Kernel(int* inputArray, int inputArraySize, int* HistogramGPU)
 {
+	//Create and set to 0 local memory for single block.
+		__shared__ unsigned int temp[256];
+	temp[threadIdx.x] = 0;
+	__syncthreads();
+
 	int i = threadIdx.x + blockIdx.x * blockDim.x;
-	int stride = blockDim.x * gridDim.x;
+	int offset = blockDim.x * gridDim.x;
 
 	while (i < inputArraySize)
 	{
-		atomicAdd(&HistogramGPU[inputArray[i]], 1);
-		i += stride;
+		atomicAdd(&temp[inputArray[i]], 1);
+		i += offset;
 	}
+	__syncthreads();
+
+	atomicAdd(&(HistogramGPU[threadIdx.x]), temp[threadIdx.x] );
 }
