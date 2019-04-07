@@ -21,7 +21,7 @@ __USAGE:__
     Tips: 
     	It is good to locate input image at the same place as *.exe file. 
         Bigger NumberOfExecutions <int> cause more computing time. Optimal amount
-        is about 250-500. Max value = 0. Can not be < 0. 
+        is about 250-500. Max value = 1000. Can not be < 0. 
     
 
 #### __Example Output:__    
